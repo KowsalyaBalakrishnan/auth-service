@@ -19,6 +19,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.*;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,9 +60,15 @@ public class CustomAuthenticationFilter extends UsernamePasswordAuthenticationFi
 
         User user = (User) authResult.getPrincipal();
         Algorithm algorithm = Algorithm.HMAC256("secret".getBytes());
+
+        // Expire in 10 minutes
+        ZonedDateTime zonedDateTime = LocalDateTime.now().plusMinutes(2).atZone(ZoneId.systemDefault());
+        Instant instant = zonedDateTime.toInstant();
+        Date expiresAt = Date.from(instant);
+
         String accessToken = JWT.create()
                 .withSubject(user.getUsername())
-                .withExpiresAt(new Date(System.currentTimeMillis() + 10 * 60 * 1000))
+                .withExpiresAt(expiresAt)
                 .withIssuer(request.getRequestURL().toString())
                 .withClaim("Roles", user.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()))
                 .sign(algorithm);
